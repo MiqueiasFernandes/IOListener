@@ -5,7 +5,7 @@
  */
 package com.mikeias.iolistener;
 
-import com.mikeias.iolistener.resources.ImpressoraResource;
+import com.mikeias.iolistener.resources.impressao.ImpressoraResource;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
