@@ -6,25 +6,18 @@
 package com.mikeias.iolistener.resources.impressao.padrao;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Worker;
 import javafx.embed.swing.JFXPanel;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
-import javax.imageio.ImageIO;
 import javax.swing.JApplet;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -108,7 +101,8 @@ public class JavaFX extends JApplet {
         } else {
             webEngine.loadContent(content);
         }
-
+        
+        
         webEngine.getLoadWorker().stateProperty().addListener(new javafx.beans.value.ChangeListener<Worker.State>() {
             @Override
             public void changed(
@@ -123,7 +117,7 @@ public class JavaFX extends JApplet {
                             int old = value;
                             do {
                                 try {
-                                    Thread.sleep(10000);
+                                    Thread.sleep(5000);
                                 } catch (InterruptedException ex) {
                                 }
                             } while (old != value);
@@ -147,9 +141,15 @@ public class JavaFX extends JApplet {
         fxContainer.validate();
         fxContainer.repaint();
         fxContainer.printAll(g2d);
-
+        
         g2d.dispose();
         terminado = true;
     }
+
+    public static Component getFxContainer() {
+        return fxContainer;
+    }
+    
+    
 
 }

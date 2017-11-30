@@ -5,163 +5,38 @@
  */
 package com.mikeias.iolistener.resources.impressao;
 
-import com.mikeias.iolistener.resources.impressao.padrao.JavaFXSwingApplication;
 import com.mikeias.iolistener.resources.impressao.padrao.PrintPreview;
 import com.mikeias.iolistener.resources.impressao.termica.TermicPrinter;
 import com.mikeias.iolistener.resources.impressao.termica.TermicPrinterSerial;
 import com.mikeias.iolistener.resources.impressao.termica.TermicPrinterDefault;
-import com.fazecast.jSerialComm.SerialPort;
 import static com.mikeias.iolistener.resources.impressao.MediaPrinter.getMediaByName;
 import static com.mikeias.iolistener.resources.impressao.MediaPrinter.getOrientationByName;
 import com.mikeias.iolistener.resources.impressao.padrao.JavaFX;
+import com.sun.javafx.iio.ImageStorage;
 import groovy.json.JsonOutput;
-import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.HeadlessException;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
-import java.awt.print.Pageable;
-import java.awt.print.Printable;
 
 import javax.swing.ImageIcon;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JSlider;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.print.PageFormat;
+import java.awt.print.Printable;
+import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javafx.application.Platform;
-import javafx.beans.value.ObservableValue;
-import javafx.concurrent.Worker;
-import javafx.embed.swing.JFXPanel;
-import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
-import javafx.scene.web.WebEngine;
-import javafx.scene.web.WebView;
 import javax.imageio.ImageIO;
-import javax.print.Doc;
-import javax.print.DocFlavor;
-import javax.print.DocPrintJob;
-import javax.print.PrintService;
-import javax.print.PrintServiceLookup;
-import javax.print.SimpleDoc;
-import javax.print.attribute.Attribute;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.print.attribute.standard.MediaSizeName;
-import static javax.print.attribute.standard.MediaSizeName.A;
-import static javax.print.attribute.standard.MediaSizeName.B;
-import static javax.print.attribute.standard.MediaSizeName.C;
-import static javax.print.attribute.standard.MediaSizeName.D;
-import static javax.print.attribute.standard.MediaSizeName.E;
-import static javax.print.attribute.standard.MediaSizeName.EXECUTIVE;
-import static javax.print.attribute.standard.MediaSizeName.FOLIO;
-import static javax.print.attribute.standard.MediaSizeName.INVOICE;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A0;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A1;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A10;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A2;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A3;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A4;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A5;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A6;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A7;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A8;
-import static javax.print.attribute.standard.MediaSizeName.ISO_A9;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B0;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B1;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B10;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B2;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B3;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B4;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B5;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B6;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B7;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B8;
-import static javax.print.attribute.standard.MediaSizeName.ISO_B9;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C0;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C1;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C2;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C3;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C4;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C5;
-import static javax.print.attribute.standard.MediaSizeName.ISO_C6;
-import static javax.print.attribute.standard.MediaSizeName.ISO_DESIGNATED_LONG;
-import static javax.print.attribute.standard.MediaSizeName.ITALY_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.JAPANESE_DOUBLE_POSTCARD;
-import static javax.print.attribute.standard.MediaSizeName.JAPANESE_POSTCARD;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B0;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B1;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B10;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B2;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B3;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B4;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B5;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B6;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B7;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B8;
-import static javax.print.attribute.standard.MediaSizeName.JIS_B9;
-import static javax.print.attribute.standard.MediaSizeName.LEDGER;
-import static javax.print.attribute.standard.MediaSizeName.MONARCH_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_10X13_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_10X14_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_10X15_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_5X7;
-import static javax.print.attribute.standard.MediaSizeName.NA_6X9_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_7X9_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_8X10;
-import static javax.print.attribute.standard.MediaSizeName.NA_9X11_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_9X12_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_LEGAL;
-import static javax.print.attribute.standard.MediaSizeName.NA_LETTER;
-import static javax.print.attribute.standard.MediaSizeName.NA_NUMBER_10_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_NUMBER_11_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_NUMBER_12_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_NUMBER_14_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.NA_NUMBER_9_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.PERSONAL_ENVELOPE;
-import static javax.print.attribute.standard.MediaSizeName.QUARTO;
-import static javax.print.attribute.standard.MediaSizeName.TABLOID;
-import javax.print.attribute.standard.OrientationRequested;
-import static javax.print.attribute.standard.OrientationRequested.LANDSCAPE;
-import static javax.print.attribute.standard.OrientationRequested.PORTRAIT;
-import static javax.print.attribute.standard.OrientationRequested.REVERSE_LANDSCAPE;
-import static javax.print.attribute.standard.OrientationRequested.REVERSE_PORTRAIT;
-import javax.swing.Icon;
-import javax.swing.JApplet;
-import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -358,7 +233,7 @@ public class ImpressoraResource {
                             + "</body>\n"
                             + "</html>");
 
-                    PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf);
+                    PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf, 100);
                     preview.selecionaImpressora(printer);
 
                     return preview.printPages("all", false);
@@ -389,6 +264,34 @@ public class ImpressoraResource {
                 + "    <p>largura: <input type=\"number\" name=\"largura\" value=\"1360\"></p>\n"
                 + "    <p>altura: <input type=\"number\" name=\"altura\" value=\"800\"></p>\n"
                 + "    <p>Tipo: <input type=\"text\" name=\"tipo\" value=\"default\"></p>\n"
+                + "<button type=\"submit\">enviar</button>"
+                + "  </form>\n"
+                + "</body>\n"
+                + "</html>";
+    }
+
+    @GET
+    @Path("print/html")
+    @Produces(MediaType.TEXT_HTML)
+    public String printhtml() {
+        return "<!DOCTYPE html>\n"
+                + "<html lang=\"en\">\n"
+                + "<head>\n"
+                + "  <meta charset=\"UTF-8\">\n"
+                + "  <title>Simple Jersey</title>\n"
+                + "</head>\n"
+                + "<body>\n"
+                + "  <form action=\"http://localhost:9090/impressora/print/html/iso-a4\" method=\"post\">\n"
+                + "    <p>Text: <input type=\"text\" name=\"content\"></p>\n"
+                + "    <p>Pages: <input type=\"text\" name=\"pages\"></p>\n"
+                + "    <p>Printer: <input type=\"text\" name=\"printer\"></p>\n"
+                + "    <p>largura: <input type=\"number\" name=\"largura\" value=\"595\"> 595</p>\n"
+                + "    <p>altura: <input type=\"number\" name=\"altura\" value=\"841\"> 841</p>\n"
+                + "    <p>Tipo: <input type=\"text\" name=\"tipo\" value=\"default\"></p>\n"
+                + "<p> orientação: <select name=\"orientation\">\n"
+                + "  <option value=\"portrait\">portrait</option>\n"
+                + "  <option value=\"landscape\">landscape</option>\n"
+                + "</select> </p>\n"
                 + "<button type=\"submit\">enviar</button>"
                 + "  </form>\n"
                 + "</body>\n"
@@ -436,7 +339,6 @@ public class ImpressoraResource {
                     mTextPane.setContentType("text/html");
 
 //                    mTextPane.setText(content);
-
                     System.out.println("*******************nova impressao**************************");
 
                     JavaFX javaFX = new JavaFX();
@@ -468,12 +370,14 @@ public class ImpressoraResource {
 
                     if (image != null) {
 
-                        StyledDocument doc = (StyledDocument) mTextPane.getDocument();
-
-                        Style style = doc.addStyle("StyleName", null);
-                        StyleConstants.setIcon(style, new ImageIcon(image));
-
-                        doc.insertString(doc.getLength(), "ignored text", style);
+//                        StyledDocument doc = (StyledDocument) mTextPane.getDocument();
+//
+//                        Style style = doc.addStyle("StyleName", null);
+//                        style.addAttribute("width", "100%");
+//                        style.addAttribute("height", "100%");
+//                        StyleConstants.setIcon(style, new ImageIcon(image));
+//
+//                        doc.insertString(doc.getLength(), "ignored text", style);
 
 //                        JFrame jf = new JFrame();
 //
@@ -481,20 +385,17 @@ public class ImpressoraResource {
 //
 //                        jf.setBounds(0, 0, 300, 300);
 //                        jf.setVisible(true);
-
-                        PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf);
+                        PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf, largura);
                         preview.selecionaImpressora(printer);
 
                         if (pages == null || pages.isEmpty()) {
                             return JsonOutput.toJson(preview.getImagesOfPages());
                         }
                         return preview.printPages(pages, "true".equalsIgnoreCase(dialog));
-                    
-                    
+
                     } else if (image == null) {
                         return "{\"error\":\"erro ao renderizar imagem\"}";
                     }
-
 
                     return "{\"error\":\"" + javaFX + "\"}";
                 }
@@ -504,6 +405,214 @@ public class ImpressoraResource {
         } catch (Exception ex) {
             return "{\"error\":\"" + ex.toString() + "\"}";
         }
+    }
+
+    @POST
+    @Path("print/html/{media}")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_HTML)
+    public String postMethodHTML(
+            @PathParam("media") String media,
+            @FormParam("orientation") String orientation,
+            @FormParam("pages") String pages,
+            @FormParam("dialog") String dialog,
+            @FormParam("printer") String printer,
+            @FormParam("largura") int largura,
+            @FormParam("altura") int altura,
+            @FormParam("tipo") String tipo,
+            @FormParam("content") String content) {
+
+        try {
+
+//                    mTextPane.setText(content);
+            System.out.println("*******************nova impressao**************************");
+
+            JavaFX javaFX = new JavaFX();
+            javaFX.inicializar(content, largura, altura);
+
+//                    JavaFXSwingApplication fx = new JavaFXSwingApplication();
+//
+//                    int i = 0;
+//
+//                    if (!fx.inicializado) {
+//                        fx.main();
+//                        while (!fx.inicializado && i++ < timeout) {
+//                            Thread.sleep(1000);
+//                            System.out.println("inicializando... " + (timeout - i));
+//                        }
+//                    }
+//                    fx.content = content;
+//                    fx.setContent(content);
+            int i = 0;
+
+//                    javaFX.getImageFromContent(content);
+//                    
+            while (!javaFX.isTerminado() && i++ < timeout) {
+                Thread.sleep(1000);
+                System.out.println("aguardando imagem... " + (timeout - i));
+            }
+//
+            BufferedImage image = JavaFX.getImagem();
+            Component fxContainer = javaFX.getFxContainer();
+
+            if (image != null) {
+
+//                JTextPane mTextPane = new JTextPane() {
+//                    @Override
+//                    public void print(Graphics g) {
+//                        g.drawImage(image, 50, 50, 50, 50, null);
+//                        g.drawString("dfghdsfhefrd er gh ershse rdhserdh aseg h", 10, 10);
+//                    }
+//
+//                    @Override
+//                    public void printAll(Graphics g) {
+//                        print(g);
+//                    }
+//
+//                    @Override
+//                    public void printComponents(Graphics g) {
+//                        print(g);
+//                    }
+//
+//                };
+//
+//                mTextPane.setBounds(0, 0, largura, altura);
+//                mTextPane.setContentType("text/html");
+//
+//                StyledDocument doc = (StyledDocument) mTextPane.getDocument();
+//
+//                Style style = doc.addStyle("StyleName", null);
+//                style.addAttribute(StyleConstants.Foreground,
+//                        new ColorUIResource(Color.YELLOW));
+//                style.addAttribute("height", "10%");
+//                StyleConstants.setIcon(style, new ImageIcon(image));
+//
+//                doc.insertString(doc.getLength(), "ignored text", style);
+//                JFrame jf = new JFrame();
+//
+//                jf.add(mTextPane);
+//
+//                jf.setBounds(0, 0, 300, 300);
+//                jf.setVisible(true);
+                HashPrintRequestAttributeSet set = new HashPrintRequestAttributeSet();
+                set.add(getMediaByName(media));
+                set.add(getOrientationByName(orientation));
+                PageFormat pf = PrinterJob.getPrinterJob().getPageFormat(set);
+//
+//                int height = image.getHeight();
+//                int width = image.getWidth();
+//
+//                int larguraPagina = 248;
+//                int alturaPagina = 350;
+//
+//                float pp = (width + 0.0001f) / larguraPagina;
+//                float alturaProporcional = height * pp;
+//                long paginas = Math.round(Math.ceil(alturaProporcional / alturaPagina));
+
+//                ImageIcon icon = new ImageIcon(image);
+//
+//                Image img = icon.getImage().getScaledInstance(
+//                        largura,
+//                        Math.round(alturaProporcional),
+//                        Image.SCALE_SMOOTH);
+//                icon = new ImageIcon(img, icon.getDescription());
+//
+                ImageIO.write(image, "png", new File("/home/mfernandes/imgae1.png"));
+//
+//                BufferedImage b2 = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
+
+//                Graphics2D g2d = b2.createGraphics();
+//
+//                icon.paintIcon(null, g2d, 0, 0);
+//
+//                g2d.dispose();
+//
+//                ImageIO.write(b2, "png", new File("/home/mfernandes/imgae2.png"));
+                Printable pb = new Printable() {
+                    @Override
+                    public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
+
+                        int pageWIDTH = (int) pageFormat.getPaper().getWidth();
+                        int pageHEIGHT = (int) pageFormat.getPaper().getHeight();
+
+                        if (pageFormat.getOrientation() == pageFormat.LANDSCAPE) {
+                            pageWIDTH = pageHEIGHT;
+                            pageHEIGHT = (int) pageFormat.getPaper().getWidth();
+                        }
+
+                        int imageWIDTH = image.getWidth();
+                        int imagetHEIGHT = image.getHeight();
+
+                        float proporcaoImagem = (imageWIDTH + 0.000001f) / pageWIDTH;
+
+                        int novaH = (int) (imagetHEIGHT / proporcaoImagem);
+
+                        int paginas = (int) Math.ceil((novaH + 0.00001f) / pageHEIGHT);
+
+//                        int alt = pageHEIGHT;
+//                        
+//                        
+//                        if (pageIndex * altura > novaH) {
+//                        
+//                            alt = novaH % pageHEIGHT;
+//                            
+//                        }
+//                        
+//                        if (novaH < pageHEIGHT)
+//                            alt = novaH;
+                        int iniH = (int) (pageIndex * pageHEIGHT * proporcaoImagem);
+                        int tamH = Integer.min(imagetHEIGHT - iniH, (int) (pageHEIGHT * proporcaoImagem));
+
+                        BufferedImage subimage = image;
+
+                        if (paginas > 1 && tamH > 0) {
+                            subimage = image.getSubimage(
+                                    0,
+                                    iniH,
+                                    imageWIDTH,
+                                    tamH);
+                        }
+
+                        graphics.drawImage(
+                                subimage,
+                                0, 0, pageWIDTH, paginas > 1 ? Integer.min( pageHEIGHT, novaH - iniH)  : novaH, null);
+
+//                        graphics.translate(0, iniH);
+//
+//                        fxContainer.print(graphics);
+                        return paginas > pageIndex ? Printable.PAGE_EXISTS : 1;
+
+                    }
+                };
+
+                PrintPreview preview = new PrintPreview(pb, pf, largura);
+                preview.selecionaImpressora(printer);
+
+                ArrayList<String> imagesOfPages = preview.getImagesOfPages();
+
+                StringBuilder sb = new StringBuilder("<html><body>\n");
+
+                int k = 0;
+
+                for (String imagesOfPage : imagesOfPages) {
+
+                    sb.append("\n<br>\n imagem ").append(k++).append("\n<br>\n");
+                    sb.append("<img src=\"data:image/png;base64,");
+                    sb.append(imagesOfPage);
+                    sb.append("\" />\n");
+
+                }
+
+                sb.append("</html></body>");
+
+                return sb.toString();
+            }
+            return "imagem nao encontrada";
+
+        } catch (Exception ex) {
+            return ex.toString();
+        }
+
     }
 
 }

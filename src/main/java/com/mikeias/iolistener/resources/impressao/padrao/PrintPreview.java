@@ -63,7 +63,8 @@ public class PrintPreview extends JScrollPane {
         createPreview();
     }
 
-    public PrintPreview(final Printable pr, final PageFormat p) {
+    
+    public PrintPreview(final Printable pr, final PageFormat p, int width) {
         this.mPageable = new Pageable() {
             public int getNumberOfPages() {
                 Graphics g = new java.awt.image.BufferedImage(2, 2,
@@ -398,6 +399,13 @@ public class PrintPreview extends JScrollPane {
         private final PageFormat mPageFormat;
         private BufferedImage mImage = null;
         private Dimension mSize = null;
+
+//        public Page(int mPageNum, BufferedImage mImage) {
+//            this.mPageNum = mPageNum;
+//            this.mPageFormat = mPageable.getPageFormat(mPageNum);
+//            this.mImage = mImage;
+//            setIcon(new ImageIcon(mImage));
+//        }
 
         public Page(int x, Dimension size) {
             setHorizontalAlignment(JLabel.CENTER);
