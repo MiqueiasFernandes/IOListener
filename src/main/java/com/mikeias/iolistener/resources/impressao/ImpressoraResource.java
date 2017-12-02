@@ -14,10 +14,13 @@ import static com.mikeias.iolistener.resources.impressao.MediaPrinter.getOrienta
 import com.mikeias.iolistener.resources.impressao.padrao.JavaFX;
 import com.sun.javafx.iio.ImageStorage;
 import groovy.json.JsonOutput;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Point;
+import java.awt.Rectangle;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -32,6 +35,7 @@ import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
 import java.io.File;
 import java.util.ArrayList;
+import javafx.geometry.Bounds;
 import javax.imageio.ImageIO;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
@@ -40,6 +44,7 @@ import javax.swing.JTextPane;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
+import javax.swing.text.html.HTML;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
@@ -52,7 +57,7 @@ import javax.ws.rs.PathParam;
 @Path("impressora")
 public class ImpressoraResource {
 
-    static final int timeout = 60;
+    static final int limit = 2 * 60;
 
     @GET
     @Path("/")
@@ -257,13 +262,22 @@ public class ImpressoraResource {
                 + "  <title>Simple Jersey</title>\n"
                 + "</head>\n"
                 + "<body>\n"
-                + "  <form action=\"http://localhost:9090/impressora/print/iso-a4/portrait\" method=\"post\">\n"
+                + "  <form action=\"http://localhost:9090/impressora/print/iso-a4\" method=\"post\">\n"
                 + "    <p>Text: <input type=\"text\" name=\"content\"></p>\n"
                 + "    <p>Pages: <input type=\"text\" name=\"pages\"></p>\n"
                 + "    <p>Printer: <input type=\"text\" name=\"printer\"></p>\n"
-                + "    <p>largura: <input type=\"number\" name=\"largura\" value=\"1360\"></p>\n"
-                + "    <p>altura: <input type=\"number\" name=\"altura\" value=\"800\"></p>\n"
+                + "    <p>largura: <input type=\"number\" name=\"largura\" value=\"595\"> 595</p>\n"
+                + "    <p>altura: <input type=\"number\" name=\"altura\" value=\"841\"> 841</p>\n"
+                + "    <p>timeout : <input type=\"number\" name=\"timeout\" value=\"5000\"></p>\n"
+                + "    <p>marginsx : <input type=\"number\" name=\"marginsx\" value=\"0\"></p>\n"
+                + "    <p>marginsy : <input type=\"number\" name=\"marginsy\" value=\"0\"></p>\n"
+                + "    <p>marginix : <input type=\"number\" name=\"marginix\" value=\"0\"></p>\n"
+                + "    <p>marginiy : <input type=\"number\" name=\"marginiy\" value=\"0\"></p>\n"
                 + "    <p>Tipo: <input type=\"text\" name=\"tipo\" value=\"default\"></p>\n"
+                + "<p> orientação: <select name=\"orientation\">\n"
+                + "  <option value=\"portrait\">portrait</option>\n"
+                + "  <option value=\"landscape\">landscape</option>\n"
+                + "</select> </p>\n"
                 + "<button type=\"submit\">enviar</button>"
                 + "  </form>\n"
                 + "</body>\n"
@@ -287,6 +301,11 @@ public class ImpressoraResource {
                 + "    <p>Printer: <input type=\"text\" name=\"printer\"></p>\n"
                 + "    <p>largura: <input type=\"number\" name=\"largura\" value=\"595\"> 595</p>\n"
                 + "    <p>altura: <input type=\"number\" name=\"altura\" value=\"841\"> 841</p>\n"
+                + "    <p>timeout : <input type=\"number\" name=\"timeout\" value=\"5000\"></p>\n"
+                + "    <p>marginsx : <input type=\"number\" name=\"marginsx\" value=\"0\"></p>\n"
+                + "    <p>marginsy : <input type=\"number\" name=\"marginsy\" value=\"0\"></p>\n"
+                + "    <p>marginix : <input type=\"number\" name=\"marginix\" value=\"0\"></p>\n"
+                + "    <p>marginiy : <input type=\"number\" name=\"marginiy\" value=\"0\"></p>\n"
                 + "    <p>Tipo: <input type=\"text\" name=\"tipo\" value=\"default\"></p>\n"
                 + "<p> orientação: <select name=\"orientation\">\n"
                 + "  <option value=\"portrait\">portrait</option>\n"
@@ -299,19 +318,41 @@ public class ImpressoraResource {
     }
 
     @POST
-    @Path("print/{media}/{orientation}")
+    @Path("print/{media}")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
     public String postMethod(
             @PathParam("media") String media,
-            @PathParam("orientation") String orientation,
+            @FormParam("orientation") String orientation,
             @FormParam("pages") String pages,
             @FormParam("dialog") String dialog,
             @FormParam("printer") String printer,
             @FormParam("largura") int largura,
             @FormParam("altura") int altura,
             @FormParam("tipo") String tipo,
+            @FormParam("marginsx") int marginsx,
+            @FormParam("marginsy") int marginsy,
+            @FormParam("marginix") int marginix,
+            @FormParam("marginiy") int marginiy,
+            @FormParam("timeout") int timeout,
             @FormParam("content") String content) {
+
+        System.out.println("impressao parametros: "
+                + "media: " + media
+                + ", orientation: " + orientation
+                + ", pages: " + pages
+                + ", dialog: " + dialog
+                + ", printer: " + printer
+                + ", largura: " + largura
+                + ", altura: " + altura
+                + ", tipo: " + tipo
+                + ", marginsx: " + marginsx
+                + ", marginsy: " + marginsy
+                + ", marginix: " + marginix
+                + ", marginiy: " + marginiy
+                + ", content: " + content
+                + ", timeout: " + timeout
+        );
 
         try {
 
@@ -329,79 +370,33 @@ public class ImpressoraResource {
                 }
                 break;
                 default: {
-                    HashPrintRequestAttributeSet set = new HashPrintRequestAttributeSet();
-                    set.add(getMediaByName(media));
-                    set.add(getOrientationByName(orientation));
-                    PageFormat pf = PrinterJob.getPrinterJob().getPageFormat(set);
+                    Object[] imp = impressaoPadrao(
+                            timeout,
+                            content,
+                            largura,
+                            altura,
+                            media,
+                            orientation,
+                            marginsx,
+                            marginsy,
+                            marginix,
+                            marginiy,
+                            printer);
 
-                    JTextPane mTextPane = new JTextPane();
-                    mTextPane.setBounds(0, 0, largura, altura);
-                    mTextPane.setContentType("text/html");
+                    PrintPreview preview = (PrintPreview) imp[0];
+                    String error = (String) imp[1];
 
-//                    mTextPane.setText(content);
-                    System.out.println("*******************nova impressao**************************");
-
-                    JavaFX javaFX = new JavaFX();
-                    javaFX.inicializar(content, largura, altura);
-
-//                    JavaFXSwingApplication fx = new JavaFXSwingApplication();
-//
-//                    int i = 0;
-//
-//                    if (!fx.inicializado) {
-//                        fx.main();
-//                        while (!fx.inicializado && i++ < timeout) {
-//                            Thread.sleep(1000);
-//                            System.out.println("inicializando... " + (timeout - i));
-//                        }
-//                    }
-//                    fx.content = content;
-//                    fx.setContent(content);
-                    int i = 0;
-
-//                    javaFX.getImageFromContent(content);
-//                    
-                    while (!javaFX.isTerminado() && i++ < timeout) {
-                        Thread.sleep(1000);
-                        System.out.println("aguardando imagem... " + (timeout - i));
-                    }
-//
-                    BufferedImage image = JavaFX.getImagem();
-
-                    if (image != null) {
-
-//                        StyledDocument doc = (StyledDocument) mTextPane.getDocument();
-//
-//                        Style style = doc.addStyle("StyleName", null);
-//                        style.addAttribute("width", "100%");
-//                        style.addAttribute("height", "100%");
-//                        StyleConstants.setIcon(style, new ImageIcon(image));
-//
-//                        doc.insertString(doc.getLength(), "ignored text", style);
-
-//                        JFrame jf = new JFrame();
-//
-//                        jf.add(mTextPane);
-//
-//                        jf.setBounds(0, 0, 300, 300);
-//                        jf.setVisible(true);
-                        PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf, largura);
-                        preview.selecionaImpressora(printer);
-
-                        if (pages == null || pages.isEmpty()) {
-                            return JsonOutput.toJson(preview.getImagesOfPages());
-                        }
-                        return preview.printPages(pages, "true".equalsIgnoreCase(dialog));
-
-                    } else if (image == null) {
-                        return "{\"error\":\"erro ao renderizar imagem\"}";
+                    if (preview == null || error != null) {
+                        return error;
                     }
 
-                    return "{\"error\":\"" + javaFX + "\"}";
+                    if (pages == null || pages.isEmpty()) {
+                        return JsonOutput.toJson(preview.getImagesOfPages());
+                    }
+                    return preview.printPages(pages, "true".equalsIgnoreCase(dialog));
                 }
             }
             return "{\"error\":\"\"}";
-
         } catch (Exception ex) {
             return "{\"error\":\"" + ex.toString() + "\"}";
         }
@@ -420,114 +415,105 @@ public class ImpressoraResource {
             @FormParam("largura") int largura,
             @FormParam("altura") int altura,
             @FormParam("tipo") String tipo,
+            @FormParam("marginsx") int marginsx,
+            @FormParam("marginsy") int marginsy,
+            @FormParam("marginix") int marginix,
+            @FormParam("marginiy") int marginiy,
+            @FormParam("timeout") int timeout,
             @FormParam("content") String content) {
 
-        try {
+        System.out.println("impressao parametros: "
+                + "media: " + media
+                + ", orientation: " + orientation
+                + ", pages: " + pages
+                + ", dialog: " + dialog
+                + ", printer: " + printer
+                + ", largura: " + largura
+                + ", altura: " + altura
+                + ", tipo: " + tipo
+                + ", marginsx: " + marginsx
+                + ", marginsy: " + marginsy
+                + ", marginix: " + marginix
+                + ", marginiy: " + marginiy
+                + ", content: " + content
+                + ", timeout: " + timeout
+        );
 
-//                    mTextPane.setText(content);
+        Object[] imp = impressaoPadrao(
+                timeout,
+                content,
+                largura,
+                altura,
+                media,
+                orientation,
+                marginsx,
+                marginsy,
+                marginix,
+                marginiy,
+                printer);
+
+        PrintPreview preview = (PrintPreview) imp[0];
+        String error = (String) imp[1];
+
+        if (preview == null || error != null) {
+            return error;
+        }
+
+        ArrayList<String> imagesOfPages = preview.getImagesOfPages();
+
+        StringBuilder sb = new StringBuilder("<html><body>\n");
+
+        int k = 0;
+
+        for (String imagesOfPage : imagesOfPages) {
+
+            sb.append("\n<br>\n imagem ").append(k++).append("\n<br>\n");
+            sb.append("<img src=\"data:image/png;base64,");
+            sb.append(imagesOfPage);
+            sb.append("\" />\n");
+
+        }
+
+        sb.append("</html></body>");
+
+        return sb.toString();
+    }
+
+    Object[] impressaoPadrao(
+            int timeout,
+            String content,
+            int largura,
+            int altura,
+            String media,
+            String orientation,
+            int marginsx,
+            int marginsy,
+            int marginix,
+            int marginiy,
+            String printer
+    ) {
+        try {
             System.out.println("*******************nova impressao**************************");
 
-            JavaFX javaFX = new JavaFX();
+            JavaFX javaFX = new JavaFX(timeout);
             javaFX.inicializar(content, largura, altura);
 
-//                    JavaFXSwingApplication fx = new JavaFXSwingApplication();
-//
-//                    int i = 0;
-//
-//                    if (!fx.inicializado) {
-//                        fx.main();
-//                        while (!fx.inicializado && i++ < timeout) {
-//                            Thread.sleep(1000);
-//                            System.out.println("inicializando... " + (timeout - i));
-//                        }
-//                    }
-//                    fx.content = content;
-//                    fx.setContent(content);
             int i = 0;
 
-//                    javaFX.getImageFromContent(content);
-//                    
-            while (!javaFX.isTerminado() && i++ < timeout) {
-                Thread.sleep(1000);
-                System.out.println("aguardando imagem... " + (timeout - i));
+            while (!javaFX.isTerminado() && i++ < limit) {
+                Thread.sleep(500);
+                System.out.println("aguardando imagem... " + ((limit/2) - (i / 2)));
             }
-//
+
             BufferedImage image = JavaFX.getImagem();
-            Component fxContainer = javaFX.getFxContainer();
 
             if (image != null) {
 
-//                JTextPane mTextPane = new JTextPane() {
-//                    @Override
-//                    public void print(Graphics g) {
-//                        g.drawImage(image, 50, 50, 50, 50, null);
-//                        g.drawString("dfghdsfhefrd er gh ershse rdhserdh aseg h", 10, 10);
-//                    }
-//
-//                    @Override
-//                    public void printAll(Graphics g) {
-//                        print(g);
-//                    }
-//
-//                    @Override
-//                    public void printComponents(Graphics g) {
-//                        print(g);
-//                    }
-//
-//                };
-//
-//                mTextPane.setBounds(0, 0, largura, altura);
-//                mTextPane.setContentType("text/html");
-//
-//                StyledDocument doc = (StyledDocument) mTextPane.getDocument();
-//
-//                Style style = doc.addStyle("StyleName", null);
-//                style.addAttribute(StyleConstants.Foreground,
-//                        new ColorUIResource(Color.YELLOW));
-//                style.addAttribute("height", "10%");
-//                StyleConstants.setIcon(style, new ImageIcon(image));
-//
-//                doc.insertString(doc.getLength(), "ignored text", style);
-//                JFrame jf = new JFrame();
-//
-//                jf.add(mTextPane);
-//
-//                jf.setBounds(0, 0, 300, 300);
-//                jf.setVisible(true);
                 HashPrintRequestAttributeSet set = new HashPrintRequestAttributeSet();
                 set.add(getMediaByName(media));
                 set.add(getOrientationByName(orientation));
                 PageFormat pf = PrinterJob.getPrinterJob().getPageFormat(set);
-//
-//                int height = image.getHeight();
-//                int width = image.getWidth();
-//
-//                int larguraPagina = 248;
-//                int alturaPagina = 350;
-//
-//                float pp = (width + 0.0001f) / larguraPagina;
-//                float alturaProporcional = height * pp;
-//                long paginas = Math.round(Math.ceil(alturaProporcional / alturaPagina));
 
-//                ImageIcon icon = new ImageIcon(image);
-//
-//                Image img = icon.getImage().getScaledInstance(
-//                        largura,
-//                        Math.round(alturaProporcional),
-//                        Image.SCALE_SMOOTH);
-//                icon = new ImageIcon(img, icon.getDescription());
-//
-                ImageIO.write(image, "png", new File("/home/mfernandes/imgae1.png"));
-//
-//                BufferedImage b2 = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_RGB);
-
-//                Graphics2D g2d = b2.createGraphics();
-//
-//                icon.paintIcon(null, g2d, 0, 0);
-//
-//                g2d.dispose();
-//
-//                ImageIO.write(b2, "png", new File("/home/mfernandes/imgae2.png"));
                 Printable pb = new Printable() {
                     @Override
                     public int print(Graphics graphics, PageFormat pageFormat, int pageIndex) throws PrinterException {
@@ -540,46 +526,39 @@ public class ImpressoraResource {
                             pageHEIGHT = (int) pageFormat.getPaper().getWidth();
                         }
 
+                        pageWIDTH -= (marginix + marginsx);
+                        pageHEIGHT -= (marginiy + marginsy);
+
                         int imageWIDTH = image.getWidth();
                         int imagetHEIGHT = image.getHeight();
 
-                        float proporcaoImagem = (imageWIDTH + 0.000001f) / pageWIDTH;
+                        Object[] dt = getBounds(pageWIDTH, pageHEIGHT, imageWIDTH, imagetHEIGHT, pageIndex);
 
-                        int novaH = (int) (imagetHEIGHT / proporcaoImagem);
+                        Rectangle rimage = (Rectangle) dt[0];
+                        Rectangle rpage = (Rectangle) dt[1];
+                        int paginas = (int) dt[2];
 
-                        int paginas = (int) Math.ceil((novaH + 0.00001f) / pageHEIGHT);
-
-//                        int alt = pageHEIGHT;
-//                        
-//                        
-//                        if (pageIndex * altura > novaH) {
-//                        
-//                            alt = novaH % pageHEIGHT;
-//                            
-//                        }
-//                        
-//                        if (novaH < pageHEIGHT)
-//                            alt = novaH;
-                        int iniH = (int) (pageIndex * pageHEIGHT * proporcaoImagem);
-                        int tamH = Integer.min(imagetHEIGHT - iniH, (int) (pageHEIGHT * proporcaoImagem));
+                        if (pageIndex >= paginas) {
+                            return 1;
+                        }
 
                         BufferedImage subimage = image;
 
-                        if (paginas > 1 && tamH > 0) {
+                        if (paginas > 1) {
                             subimage = image.getSubimage(
-                                    0,
-                                    iniH,
-                                    imageWIDTH,
-                                    tamH);
+                                    rimage.x,
+                                    rimage.y,
+                                    rimage.width,
+                                    rimage.height);
                         }
 
                         graphics.drawImage(
                                 subimage,
-                                0, 0, pageWIDTH, paginas > 1 ? Integer.min( pageHEIGHT, novaH - iniH)  : novaH, null);
+                                marginsx, marginsy,
+                                pageWIDTH,
+                                rpage.height,
+                                null);
 
-//                        graphics.translate(0, iniH);
-//
-//                        fxContainer.print(graphics);
                         return paginas > pageIndex ? Printable.PAGE_EXISTS : 1;
 
                     }
@@ -587,32 +566,44 @@ public class ImpressoraResource {
 
                 PrintPreview preview = new PrintPreview(pb, pf, largura);
                 preview.selecionaImpressora(printer);
-
-                ArrayList<String> imagesOfPages = preview.getImagesOfPages();
-
-                StringBuilder sb = new StringBuilder("<html><body>\n");
-
-                int k = 0;
-
-                for (String imagesOfPage : imagesOfPages) {
-
-                    sb.append("\n<br>\n imagem ").append(k++).append("\n<br>\n");
-                    sb.append("<img src=\"data:image/png;base64,");
-                    sb.append(imagesOfPage);
-                    sb.append("\" />\n");
-
-                }
-
-                sb.append("</html></body>");
-
-                return sb.toString();
+                return new Object[]{preview, null};
             }
-            return "imagem nao encontrada";
-
+            return new Object[]{null, "imagem não encontrada"};
         } catch (Exception ex) {
-            return ex.toString();
+            return new Object[]{null, ex};
         }
+    }
 
+    Object[] getBounds(int pageW, int pageH, int imagW, int imagH, int pageIndex) {
+
+        Rectangle rimage = new Rectangle();
+        Rectangle rpage = new Rectangle();
+
+        rimage.setRect(0, 0, 0, 0);
+        rpage.setRect(0, 0, 0, 0);
+
+        float ppi = (0.00001f + imagW) / pageW; //// qtas X a imagem em relacao a pagina
+        float ppp = (0.00001f + pageH) / pageW; //// qtas X a altura em relacao a largura
+
+        int paginas = Integer.max((int) Math.ceil(imagH / (imagW * ppp)), 1);
+
+        Point pageReal = new Point(imagW, (int) (imagW * ppp));
+
+        int orY = pageReal.y * pageIndex;
+        int desY = Integer.min(pageReal.y * (pageIndex + 1), imagH);
+        int tamP = desY - orY;
+
+        rimage.x = 0;
+        rimage.y = orY;
+        rimage.width = imagW;
+        rimage.height = tamP;
+
+        rpage.x = 0;
+        rpage.y = 0;
+        rpage.width = pageW;
+        rpage.height = (int) (pageH * ((tamP + 0.00001f) / pageReal.y));
+
+        return new Object[]{rimage, rpage, paginas};
     }
 
 }

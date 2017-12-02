@@ -9,6 +9,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.HeadlessException;
 import java.awt.image.BufferedImage;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
@@ -35,6 +36,11 @@ public class JavaFX extends JApplet {
     private static String content;
     private static boolean terminado = false;
     private static BufferedImage imagem;
+    private int timeout = 5000;
+
+    public JavaFX(int timeout) throws HeadlessException {
+        this.timeout = timeout;
+    }
 
     public static boolean isTerminado() {
         return terminado;
@@ -61,7 +67,7 @@ public class JavaFX extends JApplet {
                 JFrame frame = new JFrame("JavaFX 2 in Swing");
                 frame.setUndecorated(true);
 
-                JApplet applet = new JavaFX();
+                JApplet applet = new JavaFX(timeout);
                 applet.init();
 
                 frame.setContentPane(applet.getContentPane());
@@ -117,7 +123,7 @@ public class JavaFX extends JApplet {
                             int old = value;
                             do {
                                 try {
-                                    Thread.sleep(5000);
+                                    Thread.sleep(timeout);
                                 } catch (InterruptedException ex) {
                                 }
                             } while (old != value);
