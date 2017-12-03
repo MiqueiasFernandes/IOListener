@@ -76,20 +76,20 @@ public class ImpressoraStatus {
     @Override
     public String toString() {
 
-        StringBuilder sb = new StringBuilder("{\"prints\":[");
+        StringBuilder sb = new StringBuilder("[");
         boolean status = false;
         for (PrintService print : prints) {
 
             sb
                     .append("{\"nome\":\"")
                     .append(print.getName())
-                    .append("\",\"atributes\":{");
+                    .append("\",\"atributes\":[");
 
             for (Attribute attribute : print.getAttributes().toArray()) {
                 sb
                         .append("\"")
                         .append(attribute.getName())
-                        .append("\":\"")
+                        .append("\",\"")
                         .append(attribute)
                         .append("\",");
                 if (attribute.getName().equalsIgnoreCase("printer-is-accepting-jobs") && attribute.toString().equalsIgnoreCase("accepting-jobs")) {
@@ -98,14 +98,14 @@ public class ImpressoraStatus {
             }
             sb
                     .deleteCharAt(sb.toString().length() - 1)
-                    .append("},\"status\":")
+                    .append("],\"status\":")
                     .append(status)
                     .append(",\"termica\":")
                     .append(isTermica(print))
                     .append("},");
         }
         sb.deleteCharAt(sb.toString().length() - 1);
-        sb.append("]}");
+        sb.append("]");
         return sb.toString();
     }
 

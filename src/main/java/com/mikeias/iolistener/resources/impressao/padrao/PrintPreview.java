@@ -64,7 +64,7 @@ public class PrintPreview extends JScrollPane {
     }
 
     
-    public PrintPreview(final Printable pr, final PageFormat p, int width) {
+    public PrintPreview(final Printable pr, final PageFormat p) {
         this.mPageable = new Pageable() {
             public int getNumberOfPages() {
                 Graphics g = new java.awt.image.BufferedImage(2, 2,

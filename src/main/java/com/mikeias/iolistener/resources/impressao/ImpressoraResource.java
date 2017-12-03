@@ -12,13 +12,8 @@ import com.mikeias.iolistener.resources.impressao.termica.TermicPrinterDefault;
 import static com.mikeias.iolistener.resources.impressao.MediaPrinter.getMediaByName;
 import static com.mikeias.iolistener.resources.impressao.MediaPrinter.getOrientationByName;
 import com.mikeias.iolistener.resources.impressao.padrao.JavaFX;
-import com.sun.javafx.iio.ImageStorage;
 import groovy.json.JsonOutput;
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import javax.ws.rs.GET;
@@ -28,23 +23,14 @@ import javax.ws.rs.core.MediaType;
 
 import java.awt.image.BufferedImage;
 
-import javax.swing.ImageIcon;
 import java.awt.print.PageFormat;
 import java.awt.print.Printable;
 import java.awt.print.PrinterException;
 import java.awt.print.PrinterJob;
-import java.io.File;
 import java.util.ArrayList;
-import javafx.geometry.Bounds;
-import javax.imageio.ImageIO;
 
 import javax.print.attribute.HashPrintRequestAttributeSet;
-import javax.swing.JFrame;
 import javax.swing.JTextPane;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
-import javax.swing.text.html.HTML;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
@@ -238,7 +224,7 @@ public class ImpressoraResource {
                             + "</body>\n"
                             + "</html>");
 
-                    PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf, 100);
+                    PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf);
                     preview.selecionaImpressora(printer);
 
                     return preview.printPages("all", false);
@@ -316,6 +302,70 @@ public class ImpressoraResource {
                 + "</body>\n"
                 + "</html>";
     }
+    
+    
+    
+    @GET
+    @Path("text")
+    @Produces(MediaType.TEXT_HTML)
+    public String testText() {
+        return "<!DOCTYPE html>\n"
+                + "<html lang=\"en\">\n"
+                + "<head>\n"
+                + "  <meta charset=\"UTF-8\">\n"
+                + "  <title>Impressão em MODO TEXTO</title>\n"
+                + "</head>\n"
+                + "<body>\n"
+                + "<h1>Impressão em MODO TEXTO</h1><br>"
+                + "  <form action=\"http://localhost:9090/impressora/print/text/iso-a4\" method=\"post\">\n"
+                + "    <p>Text: <input type=\"text\" name=\"content\"></p>\n"
+                + "    <p>Pages: <input type=\"text\" name=\"pages\" value=\"all\"></p>\n"
+                + "    <p>Printer: <input type=\"text\" name=\"printer\"></p>\n"
+                + "<p> orientação: <select name=\"orientation\">\n"
+                + "  <option value=\"portrait\">portrait</option>\n"
+                + "  <option value=\"landscape\">landscape</option>\n"
+                + "</select> </p>\n"
+                + "<button type=\"submit\">enviar</button>"
+                + "  </form>\n"
+                + "</body>\n"
+                + "</html>";
+    }
+    
+    @POST
+    @Path("print/text/{media}")
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String postText(
+            @PathParam("media") String media,
+            @FormParam("orientation") String orientation,
+            @FormParam("pages") String pages,
+            @FormParam("printer") String printer,
+            @FormParam("content") String content) {
+        
+        System.out.println("impressao parametros: "
+                + "media: " + media
+                + ", orientation: " + orientation
+                + ", pages: " + pages
+                + ", printer: " + printer
+                + ", content: " + content
+        );
+        
+         try {
+                    HashPrintRequestAttributeSet set = new HashPrintRequestAttributeSet();
+                    set.add(getMediaByName(media));
+                    set.add(getOrientationByName(orientation));
+                    PageFormat pf = PrinterJob.getPrinterJob().getPageFormat(set);
+                    JTextPane mTextPane = new JTextPane();
+                    mTextPane.setContentType("text/html");
+                    mTextPane.setText(content);
+                    PrintPreview preview = new PrintPreview(mTextPane.getPrintable(null, null), pf);
+                    preview.selecionaImpressora(printer);
+                    return preview.printPages(pages, false);
+        } catch (Exception ex) {
+            return "{\"error\":\"" + ex.toString() + "\"}";
+        }
+    }
+    
 
     @POST
     @Path("print/{media}")
@@ -422,7 +472,7 @@ public class ImpressoraResource {
             @FormParam("timeout") int timeout,
             @FormParam("content") String content) {
 
-        System.out.println("impressao parametros: "
+        System.out.println("impressao html parametros: "
                 + "media: " + media
                 + ", orientation: " + orientation
                 + ", pages: " + pages
@@ -564,7 +614,7 @@ public class ImpressoraResource {
                     }
                 };
 
-                PrintPreview preview = new PrintPreview(pb, pf, largura);
+                PrintPreview preview = new PrintPreview(pb, pf);
                 preview.selecionaImpressora(printer);
                 return new Object[]{preview, null};
             }
